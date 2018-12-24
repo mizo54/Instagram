@@ -118,13 +118,14 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as! PostTableViewCell
         cell.setPostData(postArray[indexPath.row])
         
-        // セル内のボタンのアクションをソースコードで設定する
+        // セル内のボタン（「いいね」，「送信」）のアクションをソースコードで設定する
         cell.likeButton.addTarget(self, action:#selector(handleButton(_:forEvent:)), for: .touchUpInside)
+        cell.sendButton.addTarget(self, action:#selector(handleSendButton(_:forEvent:)), for: .touchUpInside)
         
         return cell
     }
     
-    // セル内のボタンがタップされた時に呼ばれるメソッド
+    // セル内の「いいね」ボタンがタップされた時に呼ばれるメソッド
     @objc func handleButton(_ sender: UIButton, forEvent event: UIEvent) {
         print("DEBUG_PRINT: likeボタンがタップされました。")
         
@@ -158,6 +159,30 @@ class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDe
             let likes = ["likes": postData.likes]
             postRef.updateChildValues(likes)
             
+        }
+    }
+    
+    // セル内の「送信」ボタンがタップされた時に呼ばれるメソッド
+    @objc func handleSendButton(_ sender: UIButton, forEvent event: UIEvent) {
+        print("DEBUG_PRINT: 送信ボタンがタップされました。")
+        // タップされたセルのインデックスを求める
+        let touch = event.allTouches?.first
+        let point = touch!.location(in: self.tableView)
+        let indexPath = tableView.indexPathForRow(at: point)
+        
+        let name = Auth.auth().currentUser?.displayName
+        
+        let cell = tableView.cellForRow(at: indexPath!) as! PostTableViewCell
+        
+        // 配列からタップされたインデックスのデータを取り出す
+        let postData = postArray[indexPath!.row]
+
+        if let messageText = cell.messageText.text {  // コメントが入力されていれば
+            postData.comments.append("\(name!):\(messageText)")
+            let postRef = Database.database().reference().child(Const.PostPath).child(postData.id!)
+            let comments = ["comments":postData.comments]
+            postRef.updateChildValues(comments)
+            cell.messageText.text = ""  // コメントの入力フィールドをクリア
         }
     }
 }
